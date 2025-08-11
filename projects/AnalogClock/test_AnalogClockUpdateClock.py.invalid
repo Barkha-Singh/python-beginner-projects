@@ -1,0 +1,70 @@
+import pytest
+import tkinter as tk
+from unittest.mock import patch
+from math import sin, cos, pi
+from projects.AnalogClock.analog_clock import update_clock, draw_hand
+
+# Mocking the tkinter elements
+root = tk.Tk()
+canvas = tk.Canvas(root, width=350, height=350)
+canvas.pack()
+time_var = tk.IntVar()
+time_var.set(10 * 3600)
+
+class TestAnalogClockUpdateClock:
+
+    @pytest.mark.valid
+    def test_time_conversion_to_angles(self):
+        time_var.set(3661)  # 1 hour, 1 minute, and 1 second
+        update_clock()
+        seconds_angle = 90 - (1 * 6)
+        minutes_angle = 90 - (1 * 6) - (1 * 0.1)
+        hours_angle = 90 - (1 * 30 + 1 * 0.5)
+        assert seconds_angle == 84
+        assert minutes_angle == 83.9
+        assert hours_angle == 59.5
+
+    @pytest.mark.valid
+    def test_clock_face_and_numbers_drawing(self):
+        canvas.delete("all")
+        update_clock()
+        # Check if the oval and numbers are drawn
+        assert len(canvas.find_all()) > 0
+        # Check if numbers 1 to 12 are drawn
+        for i in range(1, 13):
+            angle = 90 - i * 30
+            x = 150 + 85 * cos(angle * (pi / 180))
+            y = 150 - 85 * sin(angle * (pi / 180))
+            text_items = canvas.find_withtag("text")
+            assert any(canvas.coords(item) == [x, y] for item in text_items)
+
+    @pytest.mark.valid
+    def test_clock_hands_drawing(self):
+        with patch('projects.AnalogClock.analog_clock.draw_hand') as mock_draw_hand:
+            update_clock()
+            assert mock_draw_hand.call_count == 3
+            # Check the parameters for each call
+            mock_draw_hand.assert_any_call(150, 150, 84, 80, 1)  # seconds hand
+            mock_draw_hand.assert_any_call(150, 150, 83.9, 70, 2)  # minutes hand
+            mock_draw_hand.assert_any_call(150, 150, 59.5, 50, 4)  # hours hand
+
+    @pytest.mark.valid
+    def test_time_increment_and_recursion(self):
+        initial_time = time_var.get()
+        with patch.object(root, 'after') as mock_after:
+            update_clock()
+            assert time_var.get() == initial_time + 1
+            mock_after.assert_called_once_with(1000, update_clock)
+
+    @pytest.mark.valid
+    def test_midnight_edge_case(self):
+        time_var.set(0)  # Midnight
+        update_clock()
+        seconds_angle = 90
+        minutes_angle = 90
+        hours_angle = 90
+        assert seconds_angle == 90
+        assert minutes_angle == 90
+        assert hours_angle == 90
+        # Check if the clock face and hands are drawn
+        assert len(canvas.find_all()) > 0
