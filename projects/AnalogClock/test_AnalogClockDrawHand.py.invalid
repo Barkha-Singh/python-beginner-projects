@@ -1,0 +1,115 @@
+import pytest
+import tkinter as tk
+from math import sin, cos, pi
+from projects.AnalogClock.analog_clock import draw_hand
+
+class Test_AnalogClockDrawHand:
+
+    @pytest.fixture(scope="function")
+    def setup_canvas(self):
+        root = tk.Tk()
+        root.title('Analog Clock Test')
+        canvas = tk.Canvas(root, width=350, height=350)
+        canvas.pack()
+        return canvas
+
+    @pytest.mark.valid
+    def test_draw_hand_horizontal(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = 0
+        length = 50
+        width = 2
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify the line is drawn horizontally
+        expected_end_x = x + length
+        expected_end_y = y
+        line = canvas.find_all()[-1]
+        coords = canvas.coords(line)
+        assert coords == [x, y, expected_end_x, expected_end_y]
+
+    @pytest.mark.valid
+    def test_draw_hand_vertical(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = 90
+        length = 50
+        width = 2
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify the line is drawn vertically
+        expected_end_x = x
+        expected_end_y = y - length
+        line = canvas.find_all()[-1]
+        coords = canvas.coords(line)
+        assert coords == [x, y, expected_end_x, expected_end_y]
+
+    @pytest.mark.valid
+    def test_draw_hand_negative_angle(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = -45
+        length = 50
+        width = 2
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify the line is drawn in the correct direction
+        radian_angle = angle * (pi / 180)
+        expected_end_x = x + length * cos(radian_angle)
+        expected_end_y = y - length * sin(radian_angle)
+        line = canvas.find_all()[-1]
+        coords = canvas.coords(line)
+        assert coords == [x, y, expected_end_x, expected_end_y]
+
+    @pytest.mark.valid
+    def test_draw_hand_large_angle(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = 450  # Equivalent to 90 degrees
+        length = 50
+        width = 2
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify the line is drawn vertically
+        expected_end_x = x
+        expected_end_y = y - length
+        line = canvas.find_all()[-1]
+        coords = canvas.coords(line)
+        assert coords == [x, y, expected_end_x, expected_end_y]
+
+    @pytest.mark.edge
+    def test_draw_hand_zero_length(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = 45  # Any angle
+        length = 0
+        width = 2
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify no line is drawn
+        expected_end_x = x
+        expected_end_y = y
+        line = canvas.find_all()[-1]
+        coords = canvas.coords(line)
+        assert coords == [x, y, expected_end_x, expected_end_y]
+
+    @pytest.mark.valid
+    def test_draw_hand_maximum_width(self, setup_canvas):
+        canvas = setup_canvas
+        x, y = 100, 100
+        angle = 45  # Any angle
+        length = 50
+        width = 10  # Maximum width
+
+        draw_hand(canvas, x, y, angle, length, width)
+
+        # Verify the line is drawn with the specified width
+        line = canvas.find_all()[-1]
+        line_width = canvas.itemcget(line, 'width')
+        assert float(line_width) == width
